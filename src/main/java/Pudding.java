@@ -41,6 +41,14 @@ public class Pudding {
                         System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
                     }
                 }
+                else if (input.startsWith("deadline")) {
+                    int index = Integer.parseInt(input.substring(7));
+                    if(0<index && index<=list.size()) {
+                        System.out.println("OK, I've marked this task as not done yet:");
+                        list.get(index - 1).isDone = false;
+                        System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
+                    }
+                }
                 else{
                     System.out.println("added: "+input);
                     list.add(new Task(input));
@@ -67,5 +75,52 @@ public class Pudding {
         }
 
     }
+
+    public static class Todo {
+        protected String description;
+        protected boolean isDone;
+
+        public Todo(String description) {
+            this.description = description;
+            this.isDone = false;
+        }
+
+        public String getStatusIcon() {
+            return (isDone ? "X" : " ");
+        }
+
+    }
+
+    public class Deadline extends Task {
+
+        protected String by;
+
+        public Deadline(String description, String by) {
+            super(description);
+            this.by = by;
+        }
+
+        @Override
+        public String toString() {
+            return "[D]" + super.toString() + " (by: " + by + ")";
+        }
+    }
+
+    public class Events extends Task {
+
+        protected String from, to;
+
+        public Events(String description, String from, String to) {
+            super(description);
+            this.to = to;
+            this.from = from;
+        }
+
+        @Override
+        public String toString() {
+            return "[D]" + super.toString() + " (from: " + from + ", to: " + to + ")";
+        }
+    }
+
 
 }
