@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 public class Pudding {
     public static void main(String[] args) {
@@ -15,8 +16,17 @@ public class Pudding {
         System.out.println(line);
         Scanner sc = new Scanner(System.in);
         String input = sc.nextLine();
+        ArrayList list = new ArrayList();
         while(!input.equals("bye")) {
-            System.out.println(input);
+            if(input.equals("list")) {
+                for (int i = 0; i < list.size(); i++) {
+                    System.out.println((i+1) + ". " +list.get(i));
+                }
+            }
+            else {
+                System.out.println("added: "+input);
+                list.add(input);
+            }
             System.out.println(line);
             input = sc.nextLine();
         }
