@@ -19,9 +19,10 @@ public class Pudding {
         ArrayList<Task> list = new ArrayList<>();
         while(!input.equals("bye")) {
             if(input.equals("list")) {
+                System.out.println(line);
                 System.out.println("Here are the tasks in your list:");
                 for (int i = 0; i < list.size(); i++) {
-                    System.out.println((i+1) + ".[" +list.get(i).getStatusIcon()+"] "+list.get(i).description);
+                    System.out.println((i+1) + "." +list.get(i).toString());
                 }
             }
             else {
@@ -41,13 +42,24 @@ public class Pudding {
                         System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
                     }
                 }
+                else if (input.startsWith("todo")) {
+                    String[] Subparts = input.split(" ");
+                    list.add(new Todo(Subparts[1]));
+                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                }
                 else if (input.startsWith("deadline")) {
-                    int index = Integer.parseInt(input.substring(7));
-                    if(0<index && index<=list.size()) {
-                        System.out.println("OK, I've marked this task as not done yet:");
-                        list.get(index - 1).isDone = false;
-                        System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
-                    }
+                    String[] parts = input.split("/");
+                    String[] Subparts = parts[0].split(" ");
+                    list.add(new Deadline(combineStr(Subparts),parts[1].replace("by ","")));
+                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                }
+                else if (input.startsWith("event")) {
+                    String[] parts = input.split("/");
+                    String[] Subparts = parts[0].split(" ");
+                    list.add(new Events(combineStr(Subparts),parts[1].replace("from ", ""),
+                            parts[2].replace("to ", "")));
+                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                    replyRoutine(list.get(list.size()-1), list.size());
                 }
                 else{
                     System.out.println("added: "+input);
@@ -60,6 +72,19 @@ public class Pudding {
         System.out.println("\nBye. Hope to see you again soon!\n");
         System.out.println(line);
     }
+    public static String combineStr(String[] strs){
+        String result = "";
+        for(int i=1;i<strs.length;i++){
+            result += strs[i];
+        }
+        return result;
+    }
+    public static String replyRoutine(Task task, int n){
+        String result = "";
+        String line = "____________________________________________________________";
+        result += line+"\nGot it. I've added this task:\n" +task.toString() +"\nNow you have "+n+" tasks in the list.";
+        return result;
+    }
 
     public static class Task {
         protected String description;
@@ -69,6 +94,9 @@ public class Pudding {
             this.description = description;
             this.isDone = false;
         }
+        public String toString() {
+            return description;
+        }
 
         public String getStatusIcon() {
             return (isDone ? "X" : " ");
@@ -76,22 +104,19 @@ public class Pudding {
 
     }
 
-    public static class Todo {
-        protected String description;
-        protected boolean isDone;
+    public static class Todo extends Task{
 
         public Todo(String description) {
-            this.description = description;
-            this.isDone = false;
+            super(description);
         }
 
-        public String getStatusIcon() {
-            return (isDone ? "X" : " ");
+        @Override
+        public String toString() {
+            return "[T]" +"["+getStatusIcon()+"] "+ super.toString();
         }
-
     }
 
-    public class Deadline extends Task {
+    public static class Deadline extends Task {
 
         protected String by;
 
@@ -102,11 +127,11 @@ public class Pudding {
 
         @Override
         public String toString() {
-            return "[D]" + super.toString() + " (by: " + by + ")";
+            return "[D]" +"["+getStatusIcon()+"] "+ super.toString() + " (by: " + by + ")";
         }
     }
 
-    public class Events extends Task {
+    public static class Events extends Task {
 
         protected String from, to;
 
@@ -118,7 +143,7 @@ public class Pudding {
 
         @Override
         public String toString() {
-            return "[D]" + super.toString() + " (from: " + from + ", to: " + to + ")";
+            return "[E]" +"["+getStatusIcon()+"] "+ super.toString() + " (from: " + from + ", to: " + to + ")";
         }
     }
 
