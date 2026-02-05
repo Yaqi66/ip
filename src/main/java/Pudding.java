@@ -44,7 +44,7 @@ public class Pudding {
                 }
                 else if (input.startsWith("todo")) {
                     String[] Subparts = input.split(" ");
-                    list.add(new Todo(Subparts[1]));
+                    list.add(new Todo(combineStr(Subparts)));
                     System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
                 }
                 else if (input.startsWith("deadline")) {
