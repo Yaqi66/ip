@@ -18,6 +18,16 @@ public class Pudding {
         String input = sc.nextLine();
         ArrayList<Task> list = new ArrayList<>();
         while(!input.equals("bye")) {
+            String errorMessage = getValidationMessage(input);
+
+            if (errorMessage != null) {
+                System.out.println(line);
+                System.out.println(errorMessage);
+                System.out.println(line);
+                input = sc.nextLine();
+                continue;
+            }
+
             if(input.equals("list")) {
                 System.out.println(line);
                 System.out.println("Here are the tasks in your list:");
@@ -84,6 +94,54 @@ public class Pudding {
         String line = "____________________________________________________________";
         result += line+"\nGot it. I've added this task:\n" +task.toString() +"\nNow you have "+n+" tasks in the list.";
         return result;
+    }
+
+
+    public static String getValidationMessage(String input) {
+        String trimmed = input.trim();
+        String[] words = trimmed.split(" ", 2);
+        String command = words[0].toLowerCase();
+
+        switch (command) {
+            case "todo":
+                if (words.length < 2 || words[1].trim().isEmpty()) {
+                    return "The description of a todo cannot be empty.\n" +
+                            "Correct format: todo [task name]";
+                }
+                break;
+
+            case "deadline":
+                if (!trimmed.contains("/by")) {
+                    return "A deadline requires a '/by' parameter to specify the time.\n" +
+                            "Correct format: deadline [task] /by [time]";
+                }
+                break;
+
+            case "event":
+                if (!trimmed.contains("/from") || !trimmed.contains("/to")) {
+                    return "An event requires both '/from' and '/to' parameters.\n" +
+                            "Correct format: event [task] /from [start] /to [end]";
+                }
+                break;
+
+            case "mark":
+            case "unmark":
+                if (words.length < 2 || words[1].trim().isEmpty()) {
+                    return "Please specify the task number you wish to " + command + ".\n" +
+                            "Correct format: " + command + " [number]";
+                }
+                break;
+
+            case "list":
+            case "bye":
+                return null;
+
+            default:
+                return "I'm sorry, but I don't recognize the command '" + command + "'.\n" +
+                        "Valid commands are: todo, deadline, event, list, mark, unmark, bye";
+        }
+
+        return null;
     }
 
     public static class Task {
