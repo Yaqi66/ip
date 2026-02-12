@@ -53,20 +53,20 @@ public class Pudding {
                     }
                 }
                 else if (input.startsWith("todo")) {
-                    String[] Subparts = input.split(" ");
-                    list.add(new Todo(combineStr(Subparts)));
+                    String[] subparts = input.split(" ");
+                    list.add(new Todo(combineStr(subparts)));
                     System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
                 }
                 else if (input.startsWith("deadline")) {
                     String[] parts = input.split("/");
-                    String[] Subparts = parts[0].split(" ");
-                    list.add(new Deadline(combineStr(Subparts),parts[1].replace("by ","")));
+                    String[] subparts = parts[0].split(" ");
+                    list.add(new Deadline(combineStr(subparts),parts[1].replace("by ","")));
                     System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
                 }
                 else if (input.startsWith("event")) {
                     String[] parts = input.split("/");
-                    String[] Subparts = parts[0].split(" ");
-                    list.add(new Events(combineStr(Subparts),parts[1].replace("from ", ""),
+                    String[] subparts = parts[0].split(" ");
+                    list.add(new Events(combineStr(subparts),parts[1].replace("from ", ""),
                             parts[2].replace("to ", "")));
                     System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
                     replyRoutine(list.get(list.size()-1), list.size());
