@@ -1,3 +1,5 @@
+package Pudding.UI;
+
 import java.util.ArrayList;
 import java.util.Scanner;
 public class Pudding {
@@ -8,12 +10,12 @@ public class Pudding {
         ██▄▄█▀ ██  ██ ██  ██ ██  ██ ██ ██ ▀▄██ ██  ▄▄▄ 
         ██     ▀████▀ ████▀  ████▀  ██ ██   ██  ▀███▀  
                                                     """;
-        String line = "____________________________________________________________";
-        System.out.println(line);
+        final String LINE = "____________________________________________________________";
+        System.out.println(LINE);
         System.out.println(logo);
         System.out.println("Hello! I'm Pudding");
         System.out.println("What can I do for you?");
-        System.out.println(line);
+        System.out.println(LINE);
         Scanner sc = new Scanner(System.in);
         String input = sc.nextLine();
         ArrayList<Task> list = new ArrayList<>();
@@ -21,15 +23,15 @@ public class Pudding {
             String errorMessage = getValidationMessage(input);
 
             if (errorMessage != null) {
-                System.out.println(line);
+                System.out.println(LINE);
                 System.out.println(errorMessage);
-                System.out.println(line);
+                System.out.println(LINE);
                 input = sc.nextLine();
                 continue;
             }
 
             if(input.equals("list")) {
-                System.out.println(line);
+                System.out.println(LINE);
                 System.out.println("Here are the tasks in your list:");
                 for (int i = 0; i < list.size(); i++) {
                     System.out.println((i+1) + "." +list.get(i).toString());
@@ -76,11 +78,11 @@ public class Pudding {
                     list.add(new Task(input));
                 }
             }
-            System.out.println(line);
+            System.out.println(LINE);
             input = sc.nextLine();
         }
         System.out.println("\nBye. Hope to see you again soon!\n");
-        System.out.println(line);
+        System.out.println(LINE);
     }
     public static String combineStr(String[] strs){
         String result = "";
@@ -91,8 +93,8 @@ public class Pudding {
     }
     public static String replyRoutine(Task task, int n){
         String result = "";
-        String line = "____________________________________________________________";
-        result += line+"\nGot it. I've added this task:\n" +task.toString() +"\nNow you have "+n+" tasks in the list.";
+        String LINE = "____________________________________________________________";
+        result += LINE+"\nGot it. I've added this task:\n" +task.toString() +"\nNow you have "+n+" tasks in the list.";
         return result;
     }
 
