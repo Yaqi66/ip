@@ -20,66 +20,64 @@ public class Pudding {
         String input = sc.nextLine();
         ArrayList<Task> list = new ArrayList<>();
         while(!input.equals("bye")) {
-            String errorMessage = getValidationMessage(input);
-
-            if (errorMessage != null) {
+//            String errorMessage = getValidationMessage(input);
+            try{
+                String errorMessage = getValidationMessage(input);
+                if(input.equals("list")) {
+                    System.out.println(LINE);
+                    System.out.println("Here are the tasks in your list:");
+                    for (int i = 0; i < list.size(); i++) {
+                        System.out.println((i+1) + "." +list.get(i).toString());
+                    }
+                }
+                else {
+                    if (input.startsWith("mark")) {
+                        int index = Integer.parseInt(input.substring(5));
+                        if(0<index && index<=list.size()) {
+                            System.out.println("Nice! I've marked this task as done:");
+                            list.get(index - 1).isDone = true;
+                            System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
+                        }
+                    }
+                    else if (input.startsWith("unmark")) {
+                        int index = Integer.parseInt(input.substring(7));
+                        if(0<index && index<=list.size()) {
+                            System.out.println("OK, I've marked this task as not done yet:");
+                            list.get(index - 1).isDone = false;
+                            System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
+                        }
+                    }
+                    else if (input.startsWith("todo")) {
+                        String[] subparts = input.split(" ");
+                        list.add(new Todo(combineStr(subparts)));
+                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                    }
+                    else if (input.startsWith("deadline")) {
+                        String[] parts = input.split("/");
+                        String[] subparts = parts[0].split(" ");
+                        list.add(new Deadline(combineStr(subparts),parts[1].replace("by ","")));
+                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                    }
+                    else if (input.startsWith("event")) {
+                        String[] parts = input.split("/");
+                        String[] subparts = parts[0].split(" ");
+                        list.add(new Events(combineStr(subparts),parts[1].replace("from ", ""),
+                                parts[2].replace("to ", "")));
+                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
+                        replyRoutine(list.get(list.size()-1), list.size());
+                    }
+                    else{
+                        System.out.println(getValidationMessage(input));
+                    }
+                }
                 System.out.println(LINE);
-                System.out.println(errorMessage);
-                System.out.println(LINE);
+            }
+            catch(Exception e) {
+                System.out.println(getValidationMessage(input));
+            }
+            finally {
                 input = sc.nextLine();
-                continue;
             }
-
-            if(input.equals("list")) {
-                System.out.println(LINE);
-                System.out.println("Here are the tasks in your list:");
-                for (int i = 0; i < list.size(); i++) {
-                    System.out.println((i+1) + "." +list.get(i).toString());
-                }
-            }
-            else {
-                if (input.startsWith("mark")) {
-                    int index = Integer.parseInt(input.substring(5));
-                    if(0<index && index<=list.size()) {
-                        System.out.println("Nice! I've marked this task as done:");
-                        list.get(index - 1).isDone = true;
-                        System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
-                    }
-                }
-                else if (input.startsWith("unmark")) {
-                    int index = Integer.parseInt(input.substring(7));
-                    if(0<index && index<=list.size()) {
-                        System.out.println("OK, I've marked this task as not done yet:");
-                        list.get(index - 1).isDone = false;
-                        System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
-                    }
-                }
-                else if (input.startsWith("todo")) {
-                    String[] subparts = input.split(" ");
-                    list.add(new Todo(combineStr(subparts)));
-                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                }
-                else if (input.startsWith("deadline")) {
-                    String[] parts = input.split("/");
-                    String[] subparts = parts[0].split(" ");
-                    list.add(new Deadline(combineStr(subparts),parts[1].replace("by ","")));
-                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                }
-                else if (input.startsWith("event")) {
-                    String[] parts = input.split("/");
-                    String[] subparts = parts[0].split(" ");
-                    list.add(new Events(combineStr(subparts),parts[1].replace("from ", ""),
-                            parts[2].replace("to ", "")));
-                    System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                    replyRoutine(list.get(list.size()-1), list.size());
-                }
-                else{
-                    System.out.println("added: "+input);
-                    list.add(new Task(input));
-                }
-            }
-            System.out.println(LINE);
-            input = sc.nextLine();
         }
         System.out.println("\nBye. Hope to see you again soon!\n");
         System.out.println(LINE);
