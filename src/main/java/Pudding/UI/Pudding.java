@@ -20,9 +20,7 @@ public class Pudding {
         String input = sc.nextLine();
         ArrayList<Task> list = new ArrayList<>();
         while(!input.equals("bye")) {
-//            String errorMessage = getValidationMessage(input);
             try{
-                String errorMessage = getValidationMessage(input);
                 if(input.equals("list")) {
                     System.out.println(LINE);
                     System.out.println("Here are the tasks in your list:");
@@ -66,6 +64,14 @@ public class Pudding {
                         System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
                         replyRoutine(list.get(list.size()-1), list.size());
                     }
+                    else if (input.startsWith("delete")) {
+                        String[] subparts = input.split(" ");
+                        int index = Integer.parseInt(subparts[1]);
+                        System.out.println("Noted. I've removed this task:");
+                        System.out.println(list.get(index));
+                        System.out.println("Now you have "+(list.size()-1)+" tasks in the list.");
+                        list.remove(Integer.parseInt(subparts[1]));
+                    }
                     else{
                         System.out.println(getValidationMessage(input));
                     }
@@ -74,6 +80,7 @@ public class Pudding {
             }
             catch(Exception e) {
                 System.out.println(getValidationMessage(input));
+                System.out.println(LINE);
             }
             finally {
                 input = sc.nextLine();
