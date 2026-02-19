@@ -33,10 +33,10 @@ public class Pudding {
         ArrayList<Task> list = new ArrayList<>();
 
         try {
-            ensureDataLogExists();      // <-- FORCE file + folder creation
-            readDataFromLogFile(list);  // <-- then load data
+            ensureDataLogExists();
+            readDataFromLogFile(list);
         } catch (IOException e) {
-            e.printStackTrace();        // show real error instead of "wrong"
+            e.printStackTrace();
         }
 
 
@@ -324,13 +324,4 @@ public class Pudding {
     }
 
 
-
-
-
-
-
 }
-
-//event project meeting /from Mon 2pm /to 4pm
-//event attend CS2113 lecture Friday 20 Feb 2026 /from 4 /to 6pm
-//deadline yaqi submit UG draft /by today 2359
