@@ -38,7 +38,6 @@ public class Pudding {
         } catch (IOException e) {
             e.printStackTrace();        // show real error instead of "wrong"
         }
-        System.out.println("Data file full path: " + DATA_LOG_FILE.toAbsolutePath());
 
 
 
@@ -331,3 +330,7 @@ public class Pudding {
 
 
 }
+
+//event project meeting /from Mon 2pm /to 4pm
+//event attend CS2113 lecture Friday 20 Feb 2026 /from 4 /to 6pm
+//deadline yaqi submit UG draft /by today 2359
