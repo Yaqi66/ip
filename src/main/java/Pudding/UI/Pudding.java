@@ -16,126 +16,85 @@ public class Pudding {
 
 
     public static void main(String[] args) {
-        String logo = """                                               
-             
-        █████▄ ██  ██ ████▄  ████▄  ██ ███  ██  ▄████  
-        ██▄▄█▀ ██  ██ ██  ██ ██  ██ ██ ██ ▀▄██ ██  ▄▄▄ 
-        ██     ▀████▀ ████▀  ████▀  ██ ██   ██  ▀███▀  
-                                                    """;
-        final String LINE = "____________________________________________________________";
-        System.out.println(LINE);
-        System.out.println(logo);
-        System.out.println("Hello! I'm Pudding");
-        System.out.println("What can I do for you?");
-        System.out.println(LINE);
-        Scanner sc = new Scanner(System.in);
-        String input = sc.nextLine();
+        Ui ui = new Ui();
         ArrayList<Task> list = new ArrayList<>();
 
         try {
             ensureDataLogExists();
             readDataFromLogFile(list);
         } catch (IOException e) {
-            e.printStackTrace();
+            ui.showLoadingError();
         }
 
+        ui.showWelcome();
+        String input = ui.readCommand();
 
-
-
-        while(!input.equals("bye")) {
-            try{
-                if(input.equals("list")) {
-                    System.out.println(LINE);
-                    System.out.println("Here are the tasks in your list:");
-                    for (int i = 0; i < list.size(); i++) {
-                        System.out.println((i+1) + "." +list.get(i).toString());
-                    }
-                }
-                else {
+        while (!input.equals("bye")) {
+            try {
+                if (input.equals("list")) {
+                    ui.showLine();
+                    ui.showTaskList(list);
+                } else {
                     if (input.startsWith("mark")) {
                         int index = Integer.parseInt(input.substring(5));
-                        if(0<index && index<=list.size()) {
-                            System.out.println("Nice! I've marked this task as done:");
+                        if (0 < index && index <= list.size()) {
                             list.get(index - 1).isDone = true;
-
                             logListToDataLog(list);
-
-                            System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
+                            ui.showMarked(list.get(index - 1));
                         }
-                    }
-                    else if (input.startsWith("unmark")) {
+                    } else if (input.startsWith("unmark")) {
                         int index = Integer.parseInt(input.substring(7));
-                        if(0<index && index<=list.size()) {
-                            System.out.println("OK, I've marked this task as not done yet:");
+                        if (0 < index && index <= list.size()) {
                             list.get(index - 1).isDone = false;
                             logListToDataLog(list);
-                            System.out.println((" [" +list.get(index-1).getStatusIcon()+"] "+list.get(index-1).description));
+                            ui.showUnmarked(list.get(index - 1));
                         }
-                    }
-                    else if (input.startsWith("todo")) {
+                    } else if (input.startsWith("todo")) {
                         String[] subparts = input.split(" ");
                         list.add(new Todo(combineStr(subparts)));
                         logListToDataLog(list);
-                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                    }
-                    else if (input.startsWith("deadline")) {
+                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
+                    } else if (input.startsWith("deadline")) {
                         String[] parts = input.split("/");
                         String[] subparts = parts[0].split(" ");
-                        list.add(new Deadline(combineStr(subparts),parts[1].replace("by ","")));
+                        list.add(new Deadline(combineStr(subparts), parts[1].replace("by ", "")));
                         logListToDataLog(list);
-                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                    }
-                    else if (input.startsWith("event")) {
+                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
+                    } else if (input.startsWith("event")) {
                         String[] parts = input.split("/");
                         String[] subparts = parts[0].split(" ");
-                        list.add(new Events(combineStr(subparts),parts[1].replace("from ", ""),
+                        list.add(new Events(combineStr(subparts), parts[1].replace("from ", ""),
                                 parts[2].replace("to ", "")));
                         logListToDataLog(list);
-                        System.out.println(replyRoutine(list.get(list.size()-1), list.size()));
-                        replyRoutine(list.get(list.size()-1), list.size());
-                    }
-                    else if (input.startsWith("delete")) {
+                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
+                    } else if (input.startsWith("delete")) {
                         String[] subparts = input.split(" ");
                         int index = Integer.parseInt(subparts[1]);
-                        System.out.println("Noted. I've removed this task:");
-                        System.out.println(list.get(index));
-                        System.out.println("Now you have "+(list.size()-1)+" tasks in the list.");
-                        list.remove(Integer.parseInt(subparts[1]));
+                        Task removed = list.get(index - 1);
+                        list.remove(index - 1);
                         logListToDataLog(list);
-                    }
-                    else{
-                        System.out.println(getValidationMessage(input));
+                        ui.showTaskDeleted(removed, list.size());
+                    } else {
+                        ui.showError(getValidationMessage(input));
                     }
                 }
-                System.out.println(LINE);
+                ui.showLine();
+            } catch (Exception e) {
+                ui.showError(getValidationMessage(input));
+                ui.showLine();
             }
-            catch(Exception e) {
-                System.out.println(getValidationMessage(input));
-                System.out.println(LINE);
-            }
-            finally {
-                input = sc.nextLine();
-                continue;
-            }
-
+            input = ui.readCommand();
         }
-        System.out.println("\nBye. Hope to see you again soon!\n");
-        System.out.println(LINE);
+        ui.showBye();
     }
-    public static String combineStr(String[] strs){
+
+    public static String combineStr(String[] strs) {
         String result = "";
-        for(int i=1;i<strs.length;i++){
+        for (int i = 1; i < strs.length; i++) {
             result += strs[i];
         }
         return result;
     }
-    public static String replyRoutine(Task task, int n){
-        String result = "";
-        String LINE = "____________________________________________________________";
-        result += LINE+"\nGot it. I've added this task:\n" +task.toString() +"\nNow you have "+n+" tasks in the list.";
-        return result;
-    }
-
 
     public static String getValidationMessage(String input) {
         String trimmed = input.trim();
@@ -182,6 +141,79 @@ public class Pudding {
         }
 
         return null;
+    }
+
+    public static class Ui {
+        private static final String LINE = "____________________________________________________________";
+        private static final String LOGO = """
+                 
+        █████▄ ██  ██ ████▄  ████▄  ██ ███  ██  ▄████  
+        ██▄▄█▀ ██  ██ ██  ██ ██  ██ ██ ██ ▀▄██ ██  ▄▄▄ 
+        ██     ▀████▀ ████▀  ████▀  ██ ██   ██  ▀███▀  
+        """;
+        private final Scanner scanner;
+
+        public Ui() {
+            this.scanner = new Scanner(System.in);
+        }
+
+        public void showLine() {
+            System.out.println(LINE);
+        }
+
+        public void showWelcome() {
+            showLine();
+            System.out.println(LOGO);
+            System.out.println("Hello! I'm Pudding");
+            System.out.println("What can I do for you?");
+            showLine();
+        }
+
+        public void showBye() {
+            System.out.println("\nBye. Hope to see you again soon!\n");
+            showLine();
+        }
+
+        public void showError(String message) {
+            System.out.println(message);
+        }
+
+        public void showLoadingError() {
+            System.out.println("Warning: failed to load saved tasks. Starting with an empty list.");
+        }
+
+        public String readCommand() {
+            return scanner.nextLine();
+        }
+
+        public void showTaskList(ArrayList<Task> list) {
+            System.out.println("Here are the tasks in your list:");
+            for (int i = 0; i < list.size(); i++) {
+                System.out.println((i + 1) + "." + list.get(i).toString());
+            }
+        }
+
+        public void showTaskAdded(Task task, int totalTasks) {
+            System.out.println("Got it. I've added this task:");
+            System.out.println("  " + task.toString());
+            System.out.println("Now you have " + totalTasks + " tasks in the list.");
+        }
+
+        public void showMarked(Task task) {
+            System.out.println("Nice! I've marked this task as done:");
+            System.out.println("  [" + task.getStatusIcon() + "] " + task.description);
+        }
+
+        public void showUnmarked(Task task) {
+            System.out.println("OK, I've marked this task as not done yet:");
+            System.out.println("  [" + task.getStatusIcon() + "] " + task.description);
+        }
+
+        public void showTaskDeleted(Task task, int remainingTasks) {
+            System.out.println("Noted. I've removed this task:");
+            System.out.println("  " + task.toString());
+            System.out.println("Now you have " + remainingTasks + " tasks in the list.");
+        }
     }
 
     public static class Task {
