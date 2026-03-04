@@ -6,10 +6,9 @@
 
 ## Quick Start
 
-1. Ensure you have **Java 21** or later installed.
-2. Run the application.
-3. Type commands at the prompt and press **Enter**.
-4. Type `bye` to exit.
+1. Run the application.
+2. Type commands at the prompt and press **Enter**.
+3. Type `bye` to exit.
 
 ---
 
