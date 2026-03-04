@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -120,49 +123,91 @@ public class Pudding {
     public static class Parser {
 
         public static Command parse(String input) throws PuddingException {
-            if (input.equals("bye")) {
+            String trimmed = input.trim();
+            if (trimmed.equals("bye")) {
                 return new ExitCommand();
             }
-            if (input.equals("list")) {
+            if (trimmed.equals("list")) {
                 return new ListCommand();
             }
-            if (input.startsWith("mark")) {
-                int index = Integer.parseInt(input.substring(5).trim());
-                return new MarkCommand(index);
+            if (trimmed.startsWith("mark ")) {
+                try {
+                    int index = Integer.parseInt(trimmed.substring(5).trim());
+                    return new MarkCommand(index);
+                } catch (NumberFormatException e) {
+                    throw new PuddingException("Please specify a valid task number.\nCorrect format: mark [number]");
+                }
             }
-            if (input.startsWith("unmark")) {
-                int index = Integer.parseInt(input.substring(7).trim());
-                return new UnmarkCommand(index);
+            if (trimmed.startsWith("unmark ")) {
+                try {
+                    int index = Integer.parseInt(trimmed.substring(7).trim());
+                    return new UnmarkCommand(index);
+                } catch (NumberFormatException e) {
+                    throw new PuddingException("Please specify a valid task number.\nCorrect format: unmark [number]");
+                }
             }
-            if (input.startsWith("todo")) {
-                String[] subparts = input.split(" ");
-                return new AddCommand(new Todo(combineStr(subparts)));
+            if (trimmed.startsWith("todo")) {
+                String desc = trimmed.substring(4).trim();
+                if (desc.isEmpty()) {
+                    throw new PuddingException("The description of a todo cannot be empty.\nCorrect format: todo [task name]");
+                }
+                return new AddCommand(new Todo(desc));
             }
-            if (input.startsWith("deadline")) {
-                String[] parts = input.split("/");
-                String[] subparts = parts[0].split(" ");
-                return new AddCommand(new Deadline(combineStr(subparts), parts[1].replace("by ", "")));
+            if (trimmed.startsWith("deadline")) {
+                String rest = trimmed.substring(8).trim();
+                int byIdx = rest.indexOf("/by");
+                if (byIdx < 0) {
+                    throw new PuddingException("A deadline requires a '/by' parameter.\nCorrect format: deadline [task] /by [date]");
+                }
+                String desc = rest.substring(0, byIdx).trim();
+                String by = rest.substring(byIdx + 3).trim();
+                if (desc.isEmpty()) {
+                    throw new PuddingException("The description of a deadline cannot be empty.");
+                }
+                if (by.isEmpty()) {
+                    throw new PuddingException("The date for '/by' cannot be empty.\nUse format: yyyy-MM-dd (e.g. 2019-12-02)");
+                }
+                try {
+                    return new AddCommand(new Deadline(desc, by));
+                } catch (IllegalArgumentException e) {
+                    throw new PuddingException(e.getMessage());
+                }
             }
-            if (input.startsWith("event")) {
-                String[] parts = input.split("/");
-                String[] subparts = parts[0].split(" ");
-                return new AddCommand(new Events(combineStr(subparts), parts[1].replace("from ", ""),
-                        parts[2].replace("to ", "")));
+            if (trimmed.startsWith("event")) {
+                String rest = trimmed.substring(5).trim();
+                int fromIdx = rest.indexOf("/from");
+                int toIdx = rest.indexOf("/to");
+                if (fromIdx < 0 || toIdx < 0) {
+                    throw new PuddingException("An event requires both '/from' and '/to' parameters.\nCorrect format: event [task] /from [date] /to [date]");
+                }
+                String desc = rest.substring(0, fromIdx).trim();
+                String from = rest.substring(fromIdx + 5, toIdx).trim();
+                String to = rest.substring(toIdx + 3).trim();
+                if (desc.isEmpty()) {
+                    throw new PuddingException("The description of an event cannot be empty.");
+                }
+                if (from.isEmpty() || to.isEmpty()) {
+                    throw new PuddingException("The dates for '/from' and '/to' cannot be empty.\nUse format: yyyy-MM-dd (e.g. 2019-12-02)");
+                }
+                try {
+                    return new AddCommand(new Events(desc, from, to));
+                } catch (IllegalArgumentException e) {
+                    throw new PuddingException(e.getMessage());
+                }
             }
-            if (input.startsWith("delete")) {
-                String[] subparts = input.split(" ");
-                return new DeleteCommand(Integer.parseInt(subparts[1]));
+            if (trimmed.startsWith("delete")) {
+                String[] subparts = trimmed.split(" ");
+                if (subparts.length < 2) {
+                    throw new PuddingException("Please specify a task number.\nCorrect format: delete [number]");
+                }
+                try {
+                    return new DeleteCommand(Integer.parseInt(subparts[1]));
+                } catch (NumberFormatException e) {
+                    throw new PuddingException("Please specify a valid task number.\nCorrect format: delete [number]");
+                }
             }
-            String errMsg = getValidationMessage(input);
-            throw new PuddingException(errMsg != null ? errMsg : "Unknown command: " + input);
-        }
-
-        public static String combineStr(String[] strs) {
-            String result = "";
-            for (int i = 1; i < strs.length; i++) {
-                result += strs[i];
-            }
-            return result;
+            String errMsg = getValidationMessage(trimmed);
+            throw new PuddingException(errMsg != null ? errMsg : "I'm sorry, but I don't recognize the command '" + trimmed.split(" ")[0] + "'.\nValid commands are: todo, deadline, event, list, mark, unmark, delete, bye");
         }
 
         public static String getValidationMessage(String input) {
@@ -306,32 +351,72 @@ public class Pudding {
 
     public static class Deadline extends Task {
 
-        protected String by;
+        protected LocalDate by;
 
-        public Deadline(String description, String by) {
+        public Deadline(String description, String byStr) {
+            super(description);
+            this.by = parseDate(byStr);
+        }
+
+        public Deadline(String description, LocalDate by) {
             super(description);
             this.by = by;
         }
 
+        private static LocalDate parseDate(String s) {
+            s = s.trim();
+            try {
+                return LocalDate.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (DateTimeParseException e1) {
+                try {
+                    return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/yyyy"));
+                } catch (DateTimeParseException e2) {
+                    throw new IllegalArgumentException("Invalid date format '" + s + "'. Use yyyy-MM-dd (e.g. 2019-12-02)");
+                }
+            }
+        }
+
         @Override
         public String toString() {
-            return "[D]" +"["+getStatusIcon()+"] "+ super.toString() + " (by: " + by + ")";
+            String display = by.format(DateTimeFormatter.ofPattern("MMM dd yyyy"));
+            return "[D]" + "[" + getStatusIcon() + "] " + super.toString() + " (by: " + display + ")";
         }
     }
 
     public static class Events extends Task {
 
-        protected String from, to;
+        protected LocalDate from, to;
 
-        public Events(String description, String from, String to) {
+        public Events(String description, String fromStr, String toStr) {
             super(description);
-            this.to = to;
+            this.from = parseDate(fromStr);
+            this.to = parseDate(toStr);
+        }
+
+        public Events(String description, LocalDate from, LocalDate to) {
+            super(description);
             this.from = from;
+            this.to = to;
+        }
+
+        private static LocalDate parseDate(String s) {
+            s = s.trim();
+            try {
+                return LocalDate.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (DateTimeParseException e1) {
+                try {
+                    return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/yyyy"));
+                } catch (DateTimeParseException e2) {
+                    throw new IllegalArgumentException("Invalid date format '" + s + "'. Use yyyy-MM-dd (e.g. 2019-12-02)");
+                }
+            }
         }
 
         @Override
         public String toString() {
-            return "[E]" +"["+getStatusIcon()+"] "+ super.toString() + " (from: " + from + ", to: " + to + ")";
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd yyyy");
+            return "[E]" + "[" + getStatusIcon() + "] " + super.toString()
+                    + " (from: " + from.format(fmt) + ", to: " + to.format(fmt) + ")";
         }
     }
 
@@ -422,9 +507,10 @@ public class Pudding {
 
         private String taskToLine(Task t) {
             if (t instanceof Deadline d) {
-                return "D | " + (d.isDone ? "1" : "0") + " | " + d.description + " | " + d.by;
+                return "D | " + (d.isDone ? "1" : "0") + " | " + d.description + " | " + d.by.toString();
             } else if (t instanceof Events e) {
-                return "E | " + (e.isDone ? "1" : "0") + " | " + e.description + " | " + e.from + " | " + e.to;
+                return "E | " + (e.isDone ? "1" : "0") + " | " + e.description
+                        + " | " + e.from.toString() + " | " + e.to.toString();
             } else {
                 return "T | " + (t.isDone ? "1" : "0") + " | " + t.description;
             }
@@ -445,17 +531,29 @@ public class Pudding {
                     break;
                 case "D":
                     if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
-                    task = new Deadline(desc, parts[3]);
+                    task = new Deadline(desc, parseStoredDate(parts[3].trim()));
                     break;
                 case "E":
                     if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
-                    task = new Events(desc, parts[3], parts[4]);
+                    task = new Events(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown task type: " + type);
             }
             task.isDone = done;
             return task;
+        }
+
+        private LocalDate parseStoredDate(String s) {
+            try {
+                return LocalDate.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (DateTimeParseException e1) {
+                try {
+                    return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/yyyy"));
+                } catch (DateTimeParseException e2) {
+                    throw new IllegalArgumentException("Unrecognised date in data file: '" + s + "'");
+                }
+            }
         }
     }
 
