@@ -12,10 +12,10 @@ public class Pudding {
     public static void main(String[] args) {
         Ui ui = new Ui();
         Storage storage = new Storage("src/main/java/Pudding/dataLog.txt");
-        ArrayList<Task> list = new ArrayList<>();
+        TaskList tasks = new TaskList();
 
         try {
-            storage.load(list);
+            storage.load(tasks);
         } catch (IOException e) {
             ui.showLoadingError();
         }
@@ -29,32 +29,31 @@ public class Pudding {
                 switch (cmd.type) {
                     case LIST:
                         ui.showLine();
-                        ui.showTaskList(list);
+                        ui.showTaskList(tasks);
                         break;
                     case MARK:
-                        if (0 < cmd.index && cmd.index <= list.size()) {
-                            list.get(cmd.index - 1).isDone = true;
-                            storage.save(list);
-                            ui.showMarked(list.get(cmd.index - 1));
+                        if (0 < cmd.index && cmd.index <= tasks.size()) {
+                            tasks.get(cmd.index).isDone = true;
+                            storage.save(tasks);
+                            ui.showMarked(tasks.get(cmd.index));
                         }
                         break;
                     case UNMARK:
-                        if (0 < cmd.index && cmd.index <= list.size()) {
-                            list.get(cmd.index - 1).isDone = false;
-                            storage.save(list);
-                            ui.showUnmarked(list.get(cmd.index - 1));
+                        if (0 < cmd.index && cmd.index <= tasks.size()) {
+                            tasks.get(cmd.index).isDone = false;
+                            storage.save(tasks);
+                            ui.showUnmarked(tasks.get(cmd.index));
                         }
                         break;
                     case ADD:
-                        list.add(cmd.task);
-                        storage.save(list);
-                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
+                        tasks.add(cmd.task);
+                        storage.save(tasks);
+                        ui.showTaskAdded(tasks.get(tasks.size()), tasks.size());
                         break;
                     case DELETE:
-                        Task removed = list.get(cmd.index - 1);
-                        list.remove(cmd.index - 1);
-                        storage.save(list);
-                        ui.showTaskDeleted(removed, list.size());
+                        Task removed = tasks.remove(cmd.index);
+                        storage.save(tasks);
+                        ui.showTaskDeleted(removed, tasks.size());
                         break;
                     case UNKNOWN:
                         ui.showError(cmd.errorMessage);
@@ -216,10 +215,10 @@ public class Pudding {
             return scanner.nextLine();
         }
 
-        public void showTaskList(ArrayList<Task> list) {
+        public void showTaskList(TaskList tasks) {
             System.out.println("Here are the tasks in your list:");
-            for (int i = 0; i < list.size(); i++) {
-                System.out.println((i + 1) + "." + list.get(i).toString());
+            for (int i = 1; i <= tasks.size(); i++) {
+                System.out.println(i + "." + tasks.get(i).toString());
             }
         }
 
@@ -310,6 +309,42 @@ public class Pudding {
 
 
 
+    public static class TaskList {
+        private final ArrayList<Task> tasks;
+
+        public TaskList() {
+            this.tasks = new ArrayList<>();
+        }
+
+        public TaskList(ArrayList<Task> tasks) {
+            this.tasks = tasks;
+        }
+
+        public void add(Task task) {
+            tasks.add(task);
+        }
+
+        public Task get(int oneBasedIndex) {
+            return tasks.get(oneBasedIndex - 1);
+        }
+
+        public Task remove(int oneBasedIndex) {
+            return tasks.remove(oneBasedIndex - 1);
+        }
+
+        public int size() {
+            return tasks.size();
+        }
+
+        public void clear() {
+            tasks.clear();
+        }
+
+        public ArrayList<Task> getTasks() {
+            return tasks;
+        }
+    }
+
     public static class Storage {
         private final Path filePath;
 
@@ -317,21 +352,21 @@ public class Pudding {
             this.filePath = Paths.get(filePath);
         }
 
-        public void load(ArrayList<Task> list) throws IOException {
+        public void load(TaskList tasks) throws IOException {
             ensureExists();
-            list.clear();
+            tasks.clear();
             for (String line : Files.readAllLines(filePath)) {
                 String trimmed = line.trim();
                 if (!trimmed.isEmpty()) {
-                    list.add(lineToTask(trimmed));
+                    tasks.add(lineToTask(trimmed));
                 }
             }
         }
 
-        public void save(ArrayList<Task> list) throws IOException {
+        public void save(TaskList tasks) throws IOException {
             ensureExists();
             ArrayList<String> lines = new ArrayList<>();
-            for (Task t : list) {
+            for (Task t : tasks.getTasks()) {
                 lines.add(taskToLine(t));
             }
             Files.write(filePath, lines);
