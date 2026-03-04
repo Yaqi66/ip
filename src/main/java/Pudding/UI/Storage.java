@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -119,11 +119,15 @@ public class Storage {
             task = new Todo(desc);
             break;
         case "D":
-            if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
+            if (parts.length < 4) {
+                throw new IllegalArgumentException("Corrupted deadline: " + line);
+            }
             task = new Deadline(desc, parseStoredDate(parts[3].trim()));
             break;
         case "E":
-            if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
+            if (parts.length < 5) {
+                throw new IllegalArgumentException("Corrupted event: " + line);
+            }
             task = new Event(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
             break;
         default:

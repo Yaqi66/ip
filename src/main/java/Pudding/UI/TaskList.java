@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 import java.util.ArrayList;
 

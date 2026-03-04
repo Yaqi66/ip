@@ -1,4 +1,4 @@
-﻿package Pudding.UI;
+﻿package pudding.ui;
 
 /**
  * Main class for the Pudding chatbot application.
@@ -39,9 +39,9 @@ public class Pudding {
             try {
                 String fullCommand = ui.readCommand();
                 ui.showLine();
-                Command c = Parser.parse(fullCommand);
-                c.execute(tasks, ui, storage);
-                isExit = c.isExit();
+                Command command = Parser.parse(fullCommand);
+                command.execute(tasks, ui, storage);
+                isExit = command.isExit();
             } catch (PuddingException e) {
                 ui.showError(e.getMessage());
             } finally {
@@ -56,6 +56,6 @@ public class Pudding {
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
-        new Pudding("src/main/java/Pudding/dataLog.txt").run();
+        new Pudding("src/main/java/pudding/dataLog.txt").run();
     }
 }

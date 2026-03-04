@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 /**
  * Parses raw user input into the appropriate {@link Command}.

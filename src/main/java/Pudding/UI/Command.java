@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 /**
  * Abstract base for all user commands.
@@ -20,7 +20,9 @@ public abstract class Command {
      * Returns {@code true} if this command should end the application loop.
      * Default is {@code false}; overridden by {@link ExitCommand}.
      */
-    public boolean isExit() { return false; }
+    public boolean isExit() {
+        return false;
+    }
 
     // -------------------------------------------------------------------------
     // Concrete command implementations
@@ -35,7 +37,9 @@ public abstract class Command {
         }
         /** @return {@code true} always, signalling the app should exit */
         @Override
-        public boolean isExit() { return true; }
+        public boolean isExit() {
+            return true;
+        }
     }
 
     /** Command that displays all tasks currently in the list. */
@@ -51,7 +55,9 @@ public abstract class Command {
     public static class AddCommand extends Command {
         private final Task task;
         /** @param task the task to be added */
-        public AddCommand(Task task) { this.task = task; }
+        public AddCommand(Task task) {
+            this.task = task;
+        }
         /** Adds {@code task} to the list, saves, and confirms to the user. */
         @Override
         public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
@@ -65,7 +71,9 @@ public abstract class Command {
     public static class DeleteCommand extends Command {
         private final int index;
         /** @param index 1-based position of the task to delete */
-        public DeleteCommand(int index) { this.index = index; }
+        public DeleteCommand(int index) {
+            this.index = index;
+        }
         /** Removes the task at {@code index}, saves, and confirms to the user. */
         @Override
         public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
@@ -79,7 +87,9 @@ public abstract class Command {
     public static class MarkCommand extends Command {
         private final int index;
         /** @param index 1-based position of the task to mark as done */
-        public MarkCommand(int index) { this.index = index; }
+        public MarkCommand(int index) {
+            this.index = index;
+        }
         /** Sets the task at {@code index} as done, saves, and confirms to the user. */
         @Override
         public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
@@ -93,7 +103,9 @@ public abstract class Command {
     public static class UnmarkCommand extends Command {
         private final int index;
         /** @param index 1-based position of the task to mark as not done */
-        public UnmarkCommand(int index) { this.index = index; }
+        public UnmarkCommand(int index) {
+            this.index = index;
+        }
         /** Sets the task at {@code index} as not done, saves, and confirms to the user. */
         @Override
         public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
@@ -107,7 +119,9 @@ public abstract class Command {
     public static class FindCommand extends Command {
         private final String keyword;
         /** @param keyword the search term (case-insensitive) */
-        public FindCommand(String keyword) { this.keyword = keyword; }
+        public FindCommand(String keyword) {
+            this.keyword = keyword;
+        }
         /** Delegates to {@link Ui#showMatchingTasks} to display all matching tasks. */
         @Override
         public void execute(TaskList tasks, Ui ui, Storage storage) {
