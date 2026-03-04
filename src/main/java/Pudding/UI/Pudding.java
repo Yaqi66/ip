@@ -9,123 +9,152 @@ import java.util.Scanner;
 
 public class Pudding {
 
-    public static void main(String[] args) {
-        Ui ui = new Ui();
-        Storage storage = new Storage("src/main/java/Pudding/dataLog.txt");
-        TaskList tasks = new TaskList();
+    private Storage storage;
+    private TaskList tasks;
+    private Ui ui;
 
+    public Pudding(String filePath) {
+        ui = new Ui();
+        storage = new Storage(filePath);
         try {
-            storage.load(tasks);
-        } catch (IOException e) {
+            tasks = new TaskList(storage.load());
+        } catch (PuddingException e) {
             ui.showLoadingError();
+            tasks = new TaskList();
         }
+    }
 
+    public void run() {
         ui.showWelcome();
-        String input = ui.readCommand();
-
-        while (!input.equals("bye")) {
+        boolean isExit = false;
+        while (!isExit) {
             try {
-                Parser.ParsedCommand cmd = Parser.parse(input);
-                switch (cmd.type) {
-                    case LIST:
-                        ui.showLine();
-                        ui.showTaskList(tasks);
-                        break;
-                    case MARK:
-                        if (0 < cmd.index && cmd.index <= tasks.size()) {
-                            tasks.get(cmd.index).isDone = true;
-                            storage.save(tasks);
-                            ui.showMarked(tasks.get(cmd.index));
-                        }
-                        break;
-                    case UNMARK:
-                        if (0 < cmd.index && cmd.index <= tasks.size()) {
-                            tasks.get(cmd.index).isDone = false;
-                            storage.save(tasks);
-                            ui.showUnmarked(tasks.get(cmd.index));
-                        }
-                        break;
-                    case ADD:
-                        tasks.add(cmd.task);
-                        storage.save(tasks);
-                        ui.showTaskAdded(tasks.get(tasks.size()), tasks.size());
-                        break;
-                    case DELETE:
-                        Task removed = tasks.remove(cmd.index);
-                        storage.save(tasks);
-                        ui.showTaskDeleted(removed, tasks.size());
-                        break;
-                    case UNKNOWN:
-                        ui.showError(cmd.errorMessage);
-                        break;
-                }
+                String fullCommand = ui.readCommand();
                 ui.showLine();
-            } catch (Exception e) {
-                ui.showError(Parser.getValidationMessage(input));
+                Command c = Parser.parse(fullCommand);
+                c.execute(tasks, ui, storage);
+                isExit = c.isExit();
+            } catch (PuddingException e) {
+                ui.showError(e.getMessage());
+            } finally {
                 ui.showLine();
             }
-            input = ui.readCommand();
         }
-        ui.showBye();
+    }
+
+    public static void main(String[] args) {
+        new Pudding("src/main/java/Pudding/dataLog.txt").run();
+    }
+
+    public static class PuddingException extends Exception {
+        public PuddingException(String message) {
+            super(message);
+        }
+    }
+
+    public abstract static class Command {
+        public abstract void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException;
+        public boolean isExit() { return false; }
+    }
+
+    public static class ExitCommand extends Command {
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) {
+            ui.showBye();
+        }
+        @Override
+        public boolean isExit() { return true; }
+    }
+
+    public static class ListCommand extends Command {
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) {
+            ui.showTaskList(tasks);
+        }
+    }
+
+    public static class AddCommand extends Command {
+        private final Task task;
+        public AddCommand(Task task) { this.task = task; }
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
+            tasks.add(task);
+            storage.save(tasks);
+            ui.showTaskAdded(tasks.get(tasks.size()), tasks.size());
+        }
+    }
+
+    public static class DeleteCommand extends Command {
+        private final int index;
+        public DeleteCommand(int index) { this.index = index; }
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
+            Task removed = tasks.remove(index);
+            storage.save(tasks);
+            ui.showTaskDeleted(removed, tasks.size());
+        }
+    }
+
+    public static class MarkCommand extends Command {
+        private final int index;
+        public MarkCommand(int index) { this.index = index; }
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
+            tasks.get(index).isDone = true;
+            storage.save(tasks);
+            ui.showMarked(tasks.get(index));
+        }
+    }
+
+    public static class UnmarkCommand extends Command {
+        private final int index;
+        public UnmarkCommand(int index) { this.index = index; }
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) throws PuddingException {
+            tasks.get(index).isDone = false;
+            storage.save(tasks);
+            ui.showUnmarked(tasks.get(index));
+        }
     }
 
     public static class Parser {
 
-        enum CommandType { LIST, MARK, UNMARK, ADD, DELETE, UNKNOWN }
-
-        static class ParsedCommand {
-            CommandType type;
-            int index;
-            Task task;
-            String errorMessage;
-
-            ParsedCommand(CommandType type) { this.type = type; }
-        }
-
-        public static ParsedCommand parse(String input) {
+        public static Command parse(String input) throws PuddingException {
+            if (input.equals("bye")) {
+                return new ExitCommand();
+            }
             if (input.equals("list")) {
-                return new ParsedCommand(CommandType.LIST);
+                return new ListCommand();
             }
             if (input.startsWith("mark")) {
-                ParsedCommand cmd = new ParsedCommand(CommandType.MARK);
-                cmd.index = Integer.parseInt(input.substring(5).trim());
-                return cmd;
+                int index = Integer.parseInt(input.substring(5).trim());
+                return new MarkCommand(index);
             }
             if (input.startsWith("unmark")) {
-                ParsedCommand cmd = new ParsedCommand(CommandType.UNMARK);
-                cmd.index = Integer.parseInt(input.substring(7).trim());
-                return cmd;
+                int index = Integer.parseInt(input.substring(7).trim());
+                return new UnmarkCommand(index);
             }
             if (input.startsWith("todo")) {
                 String[] subparts = input.split(" ");
-                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
-                cmd.task = new Todo(combineStr(subparts));
-                return cmd;
+                return new AddCommand(new Todo(combineStr(subparts)));
             }
             if (input.startsWith("deadline")) {
                 String[] parts = input.split("/");
                 String[] subparts = parts[0].split(" ");
-                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
-                cmd.task = new Deadline(combineStr(subparts), parts[1].replace("by ", ""));
-                return cmd;
+                return new AddCommand(new Deadline(combineStr(subparts), parts[1].replace("by ", "")));
             }
             if (input.startsWith("event")) {
                 String[] parts = input.split("/");
                 String[] subparts = parts[0].split(" ");
-                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
-                cmd.task = new Events(combineStr(subparts), parts[1].replace("from ", ""),
-                        parts[2].replace("to ", ""));
-                return cmd;
+                return new AddCommand(new Events(combineStr(subparts), parts[1].replace("from ", ""),
+                        parts[2].replace("to ", "")));
             }
             if (input.startsWith("delete")) {
                 String[] subparts = input.split(" ");
-                ParsedCommand cmd = new ParsedCommand(CommandType.DELETE);
-                cmd.index = Integer.parseInt(subparts[1]);
-                return cmd;
+                return new DeleteCommand(Integer.parseInt(subparts[1]));
             }
-            ParsedCommand cmd = new ParsedCommand(CommandType.UNKNOWN);
-            cmd.errorMessage = getValidationMessage(input);
-            return cmd;
+            String errMsg = getValidationMessage(input);
+            throw new PuddingException(errMsg != null ? errMsg : "Unknown command: " + input);
         }
 
         public static String combineStr(String[] strs) {
@@ -352,24 +381,33 @@ public class Pudding {
             this.filePath = Paths.get(filePath);
         }
 
-        public void load(TaskList tasks) throws IOException {
-            ensureExists();
-            tasks.clear();
-            for (String line : Files.readAllLines(filePath)) {
-                String trimmed = line.trim();
-                if (!trimmed.isEmpty()) {
-                    tasks.add(lineToTask(trimmed));
+        public ArrayList<Task> load() throws PuddingException {
+            try {
+                ensureExists();
+                ArrayList<Task> loaded = new ArrayList<>();
+                for (String line : Files.readAllLines(filePath)) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        loaded.add(lineToTask(trimmed));
+                    }
                 }
+                return loaded;
+            } catch (IOException e) {
+                throw new PuddingException("Could not load data: " + e.getMessage());
             }
         }
 
-        public void save(TaskList tasks) throws IOException {
-            ensureExists();
-            ArrayList<String> lines = new ArrayList<>();
-            for (Task t : tasks.getTasks()) {
-                lines.add(taskToLine(t));
+        public void save(TaskList tasks) throws PuddingException {
+            try {
+                ensureExists();
+                ArrayList<String> lines = new ArrayList<>();
+                for (Task t : tasks.getTasks()) {
+                    lines.add(taskToLine(t));
+                }
+                Files.write(filePath, lines);
+            } catch (IOException e) {
+                throw new PuddingException("Could not save data: " + e.getMessage());
             }
-            Files.write(filePath, lines);
         }
 
         private void ensureExists() throws IOException {
