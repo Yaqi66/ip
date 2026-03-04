@@ -121,34 +121,36 @@ public class Parser {
         String[] words = trimmed.split(" ", 2);
         String command = words[0].toLowerCase();
         switch (command) {
-            case "todo":
-                if (words.length < 2 || words[1].trim().isEmpty()) {
-                    return "The description of a todo cannot be empty.\nCorrect format: todo [task name]";
-                }
-                break;
-            case "deadline":
-                if (!trimmed.contains("/by")) {
-                    return "A deadline requires a '/by' parameter to specify the time.\nCorrect format: deadline [task] /by [time]";
-                }
-                break;
-            case "event":
-                if (!trimmed.contains("/from") || !trimmed.contains("/to")) {
-                    return "An event requires both '/from' and '/to' parameters.\nCorrect format: event [task] /from [start] /to [end]";
-                }
-                break;
-            case "mark":
-            case "unmark":
-                if (words.length < 2 || words[1].trim().isEmpty()) {
-                    return "Please specify the task number you wish to " + command
-                            + ".\nCorrect format: " + command + " [number]";
-                }
-                break;
-            case "list":
-            case "bye":
-                return null;
-            default:
-                return "I'm sorry, but I don't recognize the command '" + command
-                        + "'.\nValid commands are: todo, deadline, event, list, mark, unmark, bye";
+        case "todo":
+            if (words.length < 2 || words[1].trim().isEmpty()) {
+                return "The description of a todo cannot be empty.\nCorrect format: todo [task name]";
+            }
+            break;
+        case "deadline":
+            if (!trimmed.contains("/by")) {
+                return "A deadline requires a '/by' parameter to specify the time.\nCorrect format: deadline [task] /by [time]";
+            }
+            break;
+        case "event":
+            if (!trimmed.contains("/from") || !trimmed.contains("/to")) {
+                return "An event requires both '/from' and '/to' parameters.\nCorrect format: event [task] /from [start] /to [end]";
+            }
+            break;
+        case "mark":
+            // Fallthrough
+        case "unmark":
+            if (words.length < 2 || words[1].trim().isEmpty()) {
+                return "Please specify the task number you wish to " + command
+                        + ".\nCorrect format: " + command + " [number]";
+            }
+            break;
+        case "list":
+            // Fallthrough
+        case "bye":
+            return null;
+        default:
+            return "I'm sorry, but I don't recognize the command '" + command
+                    + "'.\nValid commands are: todo, deadline, event, list, mark, unmark, bye";
         }
         return null;
     }

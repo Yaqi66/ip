@@ -115,19 +115,19 @@ public class Storage {
         String desc = parts[2];
         Task task;
         switch (type) {
-            case "T":
-                task = new Todo(desc);
-                break;
-            case "D":
-                if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
-                task = new Deadline(desc, parseStoredDate(parts[3].trim()));
-                break;
-            case "E":
-                if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
-                task = new Event(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown task type: " + type);
+        case "T":
+            task = new Todo(desc);
+            break;
+        case "D":
+            if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
+            task = new Deadline(desc, parseStoredDate(parts[3].trim()));
+            break;
+        case "E":
+            if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
+            task = new Event(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
+            break;
+        default:
+            throw new IllegalArgumentException("Unknown task type: " + type);
         }
         task.isDone = done;
         return task;
