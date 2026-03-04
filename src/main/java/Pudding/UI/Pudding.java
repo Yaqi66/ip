@@ -120,6 +120,15 @@ public class Pudding {
         }
     }
 
+    public static class FindCommand extends Command {
+        private final String keyword;
+        public FindCommand(String keyword) { this.keyword = keyword; }
+        @Override
+        public void execute(TaskList tasks, Ui ui, Storage storage) {
+            ui.showMatchingTasks(tasks, keyword);
+        }
+    }
+
     public static class Parser {
 
         public static Command parse(String input) throws PuddingException {
@@ -194,6 +203,13 @@ public class Pudding {
                 } catch (IllegalArgumentException e) {
                     throw new PuddingException(e.getMessage());
                 }
+            }
+            if (trimmed.startsWith("find")) {
+                String keyword = trimmed.substring(4).trim();
+                if (keyword.isEmpty()) {
+                    throw new PuddingException("Please specify a search keyword.\nCorrect format: find [keyword]");
+                }
+                return new FindCommand(keyword);
             }
             if (trimmed.startsWith("delete")) {
                 String[] subparts = trimmed.split(" ");
@@ -293,6 +309,21 @@ public class Pudding {
             System.out.println("Here are the tasks in your list:");
             for (int i = 1; i <= tasks.size(); i++) {
                 System.out.println(i + "." + tasks.get(i).toString());
+            }
+        }
+
+        public void showMatchingTasks(TaskList tasks, String keyword) {
+            System.out.println("Here are the matching tasks in your list:");
+            int count = 0;
+            for (int i = 1; i <= tasks.size(); i++) {
+                Task t = tasks.get(i);
+                if (t.description.toLowerCase().contains(keyword.toLowerCase())) {
+                    count++;
+                    System.out.println(count + "." + t.toString());
+                }
+            }
+            if (count == 0) {
+                System.out.println("No matching tasks found.");
             }
         }
 
