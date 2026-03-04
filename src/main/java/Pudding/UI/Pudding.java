@@ -8,20 +8,14 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Pudding {
-    private static final Path DATA_DIR =
-            Paths.get("src", "main", "java", "Pudding");
-
-    private static final Path DATA_LOG_FILE =
-            DATA_DIR.resolve("dataLog.txt");
-
 
     public static void main(String[] args) {
         Ui ui = new Ui();
+        Storage storage = new Storage("src/main/java/Pudding/dataLog.txt");
         ArrayList<Task> list = new ArrayList<>();
 
         try {
-            ensureDataLogExists();
-            readDataFromLogFile(list);
+            storage.load(list);
         } catch (IOException e) {
             ui.showLoadingError();
         }
@@ -39,40 +33,40 @@ public class Pudding {
                         int index = Integer.parseInt(input.substring(5));
                         if (0 < index && index <= list.size()) {
                             list.get(index - 1).isDone = true;
-                            logListToDataLog(list);
+                            storage.save(list);
                             ui.showMarked(list.get(index - 1));
                         }
                     } else if (input.startsWith("unmark")) {
                         int index = Integer.parseInt(input.substring(7));
                         if (0 < index && index <= list.size()) {
                             list.get(index - 1).isDone = false;
-                            logListToDataLog(list);
+                            storage.save(list);
                             ui.showUnmarked(list.get(index - 1));
                         }
                     } else if (input.startsWith("todo")) {
                         String[] subparts = input.split(" ");
                         list.add(new Todo(combineStr(subparts)));
-                        logListToDataLog(list);
+                        storage.save(list);
                         ui.showTaskAdded(list.get(list.size() - 1), list.size());
                     } else if (input.startsWith("deadline")) {
                         String[] parts = input.split("/");
                         String[] subparts = parts[0].split(" ");
                         list.add(new Deadline(combineStr(subparts), parts[1].replace("by ", "")));
-                        logListToDataLog(list);
+                        storage.save(list);
                         ui.showTaskAdded(list.get(list.size() - 1), list.size());
                     } else if (input.startsWith("event")) {
                         String[] parts = input.split("/");
                         String[] subparts = parts[0].split(" ");
                         list.add(new Events(combineStr(subparts), parts[1].replace("from ", ""),
                                 parts[2].replace("to ", "")));
-                        logListToDataLog(list);
+                        storage.save(list);
                         ui.showTaskAdded(list.get(list.size() - 1), list.size());
                     } else if (input.startsWith("delete")) {
                         String[] subparts = input.split(" ");
                         int index = Integer.parseInt(subparts[1]);
                         Task removed = list.get(index - 1);
                         list.remove(index - 1);
-                        logListToDataLog(list);
+                        storage.save(list);
                         ui.showTaskDeleted(removed, list.size());
                     } else {
                         ui.showError(getValidationMessage(input));
@@ -280,78 +274,79 @@ public class Pudding {
 
 
 
-    private static void ensureDataLogExists() throws IOException {
-        if (!Files.exists(DATA_DIR)) {
-            Files.createDirectories(DATA_DIR);
-        }
-        if (!Files.exists(DATA_LOG_FILE)) {
-            Files.createFile(DATA_LOG_FILE);
-        }
-    }
+    public static class Storage {
+        private final Path filePath;
 
-    private static String taskToLogLine(Task t) {
-        if (t instanceof Deadline d) {
-            return "D | " + (d.isDone ? "1" : "0") + " | " + d.description + " | " + d.by;
-        } else if (t instanceof Events e) {
-            return "E | " + (e.isDone ? "1" : "0") + " | " + e.description + " | " + e.from + " | " + e.to;
-        } else {
-            return "T | " + (t.isDone ? "1" : "0") + " | " + t.description;
-        }
-    }
-
-    private static void logListToDataLog(ArrayList<Task> list) throws IOException {
-        ensureDataLogExists();
-
-        ArrayList<String> lines = new ArrayList<>();
-        for (Task t : list) {
-            lines.add(taskToLogLine(t));
-        }
-        Files.write(DATA_LOG_FILE, lines);
-    }
-
-    private static Task logLineToTask(String line) {
-        String[] parts = line.trim().split("\\s*\\|\\s*");
-        if (parts.length < 3) {
-            throw new IllegalArgumentException("Corrupted line: " + line);
+        public Storage(String filePath) {
+            this.filePath = Paths.get(filePath);
         }
 
-        String type = parts[0];
-        boolean done = parts[1].equals("1");
-        String desc = parts[2];
-
-        Task task;
-        switch (type) {
-            case "T":
-                task = new Todo(desc);
-                break;
-            case "D":
-                if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
-                task = new Deadline(desc, parts[3]);
-                break;
-            case "E":
-                if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
-                task = new Events(desc, parts[3], parts[4]);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown task type: " + type);
+        public void load(ArrayList<Task> list) throws IOException {
+            ensureExists();
+            list.clear();
+            for (String line : Files.readAllLines(filePath)) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) {
+                    list.add(lineToTask(trimmed));
+                }
+            }
         }
 
-        task.isDone = done;
-        return task;
-    }
+        public void save(ArrayList<Task> list) throws IOException {
+            ensureExists();
+            ArrayList<String> lines = new ArrayList<>();
+            for (Task t : list) {
+                lines.add(taskToLine(t));
+            }
+            Files.write(filePath, lines);
+        }
 
+        private void ensureExists() throws IOException {
+            Path parent = filePath.getParent();
+            if (parent != null && !Files.exists(parent)) {
+                Files.createDirectories(parent);
+            }
+            if (!Files.exists(filePath)) {
+                Files.createFile(filePath);
+            }
+        }
 
-    private static void readDataFromLogFile(ArrayList<Task> list) throws IOException {
-        ensureDataLogExists();
+        private String taskToLine(Task t) {
+            if (t instanceof Deadline d) {
+                return "D | " + (d.isDone ? "1" : "0") + " | " + d.description + " | " + d.by;
+            } else if (t instanceof Events e) {
+                return "E | " + (e.isDone ? "1" : "0") + " | " + e.description + " | " + e.from + " | " + e.to;
+            } else {
+                return "T | " + (t.isDone ? "1" : "0") + " | " + t.description;
+            }
+        }
 
-        list.clear();
-        ArrayList<String> lines = (ArrayList<String>) Files.readAllLines(DATA_LOG_FILE);
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) continue;
-
-            list.add(logLineToTask(trimmed));
+        private Task lineToTask(String line) {
+            String[] parts = line.trim().split("\\s*\\|\\s*");
+            if (parts.length < 3) {
+                throw new IllegalArgumentException("Corrupted line: " + line);
+            }
+            String type = parts[0];
+            boolean done = parts[1].equals("1");
+            String desc = parts[2];
+            Task task;
+            switch (type) {
+                case "T":
+                    task = new Todo(desc);
+                    break;
+                case "D":
+                    if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
+                    task = new Deadline(desc, parts[3]);
+                    break;
+                case "E":
+                    if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
+                    task = new Events(desc, parts[3], parts[4]);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown task type: " + type);
+            }
+            task.isDone = done;
+            return task;
         }
     }
 
