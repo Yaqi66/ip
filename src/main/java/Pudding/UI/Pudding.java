@@ -1,4 +1,4 @@
-﻿package pudding.ui;
+package pudding.ui;
 
 /**
  * Main class for the Pudding chatbot application.
