@@ -25,56 +25,44 @@ public class Pudding {
 
         while (!input.equals("bye")) {
             try {
-                if (input.equals("list")) {
-                    ui.showLine();
-                    ui.showTaskList(list);
-                } else {
-                    if (input.startsWith("mark")) {
-                        int index = Integer.parseInt(input.substring(5));
-                        if (0 < index && index <= list.size()) {
-                            list.get(index - 1).isDone = true;
+                Parser.ParsedCommand cmd = Parser.parse(input);
+                switch (cmd.type) {
+                    case LIST:
+                        ui.showLine();
+                        ui.showTaskList(list);
+                        break;
+                    case MARK:
+                        if (0 < cmd.index && cmd.index <= list.size()) {
+                            list.get(cmd.index - 1).isDone = true;
                             storage.save(list);
-                            ui.showMarked(list.get(index - 1));
+                            ui.showMarked(list.get(cmd.index - 1));
                         }
-                    } else if (input.startsWith("unmark")) {
-                        int index = Integer.parseInt(input.substring(7));
-                        if (0 < index && index <= list.size()) {
-                            list.get(index - 1).isDone = false;
+                        break;
+                    case UNMARK:
+                        if (0 < cmd.index && cmd.index <= list.size()) {
+                            list.get(cmd.index - 1).isDone = false;
                             storage.save(list);
-                            ui.showUnmarked(list.get(index - 1));
+                            ui.showUnmarked(list.get(cmd.index - 1));
                         }
-                    } else if (input.startsWith("todo")) {
-                        String[] subparts = input.split(" ");
-                        list.add(new Todo(combineStr(subparts)));
+                        break;
+                    case ADD:
+                        list.add(cmd.task);
                         storage.save(list);
                         ui.showTaskAdded(list.get(list.size() - 1), list.size());
-                    } else if (input.startsWith("deadline")) {
-                        String[] parts = input.split("/");
-                        String[] subparts = parts[0].split(" ");
-                        list.add(new Deadline(combineStr(subparts), parts[1].replace("by ", "")));
-                        storage.save(list);
-                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
-                    } else if (input.startsWith("event")) {
-                        String[] parts = input.split("/");
-                        String[] subparts = parts[0].split(" ");
-                        list.add(new Events(combineStr(subparts), parts[1].replace("from ", ""),
-                                parts[2].replace("to ", "")));
-                        storage.save(list);
-                        ui.showTaskAdded(list.get(list.size() - 1), list.size());
-                    } else if (input.startsWith("delete")) {
-                        String[] subparts = input.split(" ");
-                        int index = Integer.parseInt(subparts[1]);
-                        Task removed = list.get(index - 1);
-                        list.remove(index - 1);
+                        break;
+                    case DELETE:
+                        Task removed = list.get(cmd.index - 1);
+                        list.remove(cmd.index - 1);
                         storage.save(list);
                         ui.showTaskDeleted(removed, list.size());
-                    } else {
-                        ui.showError(getValidationMessage(input));
-                    }
+                        break;
+                    case UNKNOWN:
+                        ui.showError(cmd.errorMessage);
+                        break;
                 }
                 ui.showLine();
             } catch (Exception e) {
-                ui.showError(getValidationMessage(input));
+                ui.showError(Parser.getValidationMessage(input));
                 ui.showLine();
             }
             input = ui.readCommand();
@@ -82,59 +70,107 @@ public class Pudding {
         ui.showBye();
     }
 
-    public static String combineStr(String[] strs) {
-        String result = "";
-        for (int i = 1; i < strs.length; i++) {
-            result += strs[i];
-        }
-        return result;
-    }
+    public static class Parser {
 
-    public static String getValidationMessage(String input) {
-        String trimmed = input.trim();
-        String[] words = trimmed.split(" ", 2);
-        String command = words[0].toLowerCase();
+        enum CommandType { LIST, MARK, UNMARK, ADD, DELETE, UNKNOWN }
 
-        switch (command) {
-            case "todo":
-                if (words.length < 2 || words[1].trim().isEmpty()) {
-                    return "The description of a todo cannot be empty.\n" +
-                            "Correct format: todo [task name]";
-                }
-                break;
+        static class ParsedCommand {
+            CommandType type;
+            int index;
+            Task task;
+            String errorMessage;
 
-            case "deadline":
-                if (!trimmed.contains("/by")) {
-                    return "A deadline requires a '/by' parameter to specify the time.\n" +
-                            "Correct format: deadline [task] /by [time]";
-                }
-                break;
-
-            case "event":
-                if (!trimmed.contains("/from") || !trimmed.contains("/to")) {
-                    return "An event requires both '/from' and '/to' parameters.\n" +
-                            "Correct format: event [task] /from [start] /to [end]";
-                }
-                break;
-
-            case "mark":
-            case "unmark":
-                if (words.length < 2 || words[1].trim().isEmpty()) {
-                    return "Please specify the task number you wish to " + command + ".\n" +
-                            "Correct format: " + command + " [number]";
-                }
-                break;
-
-            case "list":
-            case "bye":
-                return null;
-
-            default:
-                return "I'm sorry, but I don't recognize the command '" + command + "'.\n" +
-                        "Valid commands are: todo, deadline, event, list, mark, unmark, bye";
+            ParsedCommand(CommandType type) { this.type = type; }
         }
 
-        return null;
+        public static ParsedCommand parse(String input) {
+            if (input.equals("list")) {
+                return new ParsedCommand(CommandType.LIST);
+            }
+            if (input.startsWith("mark")) {
+                ParsedCommand cmd = new ParsedCommand(CommandType.MARK);
+                cmd.index = Integer.parseInt(input.substring(5).trim());
+                return cmd;
+            }
+            if (input.startsWith("unmark")) {
+                ParsedCommand cmd = new ParsedCommand(CommandType.UNMARK);
+                cmd.index = Integer.parseInt(input.substring(7).trim());
+                return cmd;
+            }
+            if (input.startsWith("todo")) {
+                String[] subparts = input.split(" ");
+                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
+                cmd.task = new Todo(combineStr(subparts));
+                return cmd;
+            }
+            if (input.startsWith("deadline")) {
+                String[] parts = input.split("/");
+                String[] subparts = parts[0].split(" ");
+                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
+                cmd.task = new Deadline(combineStr(subparts), parts[1].replace("by ", ""));
+                return cmd;
+            }
+            if (input.startsWith("event")) {
+                String[] parts = input.split("/");
+                String[] subparts = parts[0].split(" ");
+                ParsedCommand cmd = new ParsedCommand(CommandType.ADD);
+                cmd.task = new Events(combineStr(subparts), parts[1].replace("from ", ""),
+                        parts[2].replace("to ", ""));
+                return cmd;
+            }
+            if (input.startsWith("delete")) {
+                String[] subparts = input.split(" ");
+                ParsedCommand cmd = new ParsedCommand(CommandType.DELETE);
+                cmd.index = Integer.parseInt(subparts[1]);
+                return cmd;
+            }
+            ParsedCommand cmd = new ParsedCommand(CommandType.UNKNOWN);
+            cmd.errorMessage = getValidationMessage(input);
+            return cmd;
+        }
+
+        public static String combineStr(String[] strs) {
+            String result = "";
+            for (int i = 1; i < strs.length; i++) {
+                result += strs[i];
+            }
+            return result;
+        }
+
+        public static String getValidationMessage(String input) {
+            String trimmed = input.trim();
+            String[] words = trimmed.split(" ", 2);
+            String command = words[0].toLowerCase();
+            switch (command) {
+                case "todo":
+                    if (words.length < 2 || words[1].trim().isEmpty()) {
+                        return "The description of a todo cannot be empty.\nCorrect format: todo [task name]";
+                    }
+                    break;
+                case "deadline":
+                    if (!trimmed.contains("/by")) {
+                        return "A deadline requires a '/by' parameter to specify the time.\nCorrect format: deadline [task] /by [time]";
+                    }
+                    break;
+                case "event":
+                    if (!trimmed.contains("/from") || !trimmed.contains("/to")) {
+                        return "An event requires both '/from' and '/to' parameters.\nCorrect format: event [task] /from [start] /to [end]";
+                    }
+                    break;
+                case "mark":
+                case "unmark":
+                    if (words.length < 2 || words[1].trim().isEmpty()) {
+                        return "Please specify the task number you wish to " + command + ".\nCorrect format: " + command + " [number]";
+                    }
+                    break;
+                case "list":
+                case "bye":
+                    return null;
+                default:
+                    return "I'm sorry, but I don't recognize the command '" + command + "'.\nValid commands are: todo, deadline, event, list, mark, unmark, bye";
+            }
+            return null;
+        }
     }
 
     public static class Ui {
