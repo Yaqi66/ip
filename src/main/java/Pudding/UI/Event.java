@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -7,7 +7,8 @@ import java.time.format.DateTimeParseException;
 /** Represents a task that spans a time range with a start and end date. */
 public class Event extends Task {
 
-    protected LocalDate from, to;
+    protected LocalDate from;
+    protected LocalDate to;
 
     /**
      * Creates an Event by parsing {@code fromStr} and {@code toStr} as dates.

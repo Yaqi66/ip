@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 /**
  * Represents an application-level error in Pudding (e.g. bad user input,

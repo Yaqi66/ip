@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 /** Represents a todo task with no time constraint. */
 public class Todo extends Task {

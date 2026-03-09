@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,14 +33,14 @@ public class Storage {
     public ArrayList<Task> load() throws PuddingException {
         try {
             ensureExists();
-            ArrayList<Task> loaded = new ArrayList<>();
+            ArrayList<Task> loadedTasks = new ArrayList<>();
             for (String line : Files.readAllLines(filePath)) {
                 String trimmed = line.trim();
                 if (!trimmed.isEmpty()) {
-                    loaded.add(lineToTask(trimmed));
+                    loadedTasks.add(lineToTask(trimmed));
                 }
             }
-            return loaded;
+            return loadedTasks;
         } catch (IOException e) {
             throw new PuddingException("Could not load data: " + e.getMessage());
         }
@@ -111,25 +111,29 @@ public class Storage {
             throw new IllegalArgumentException("Corrupted line: " + line);
         }
         String type = parts[0];
-        boolean done = parts[1].equals("1");
+        boolean isDone = parts[1].equals("1");
         String desc = parts[2];
         Task task;
         switch (type) {
-            case "T":
-                task = new Todo(desc);
-                break;
-            case "D":
-                if (parts.length < 4) throw new IllegalArgumentException("Corrupted deadline: " + line);
-                task = new Deadline(desc, parseStoredDate(parts[3].trim()));
-                break;
-            case "E":
-                if (parts.length < 5) throw new IllegalArgumentException("Corrupted event: " + line);
-                task = new Event(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown task type: " + type);
+        case "T":
+            task = new Todo(desc);
+            break;
+        case "D":
+            if (parts.length < 4) {
+                throw new IllegalArgumentException("Corrupted deadline: " + line);
+            }
+            task = new Deadline(desc, parseStoredDate(parts[3].trim()));
+            break;
+        case "E":
+            if (parts.length < 5) {
+                throw new IllegalArgumentException("Corrupted event: " + line);
+            }
+            task = new Event(desc, parseStoredDate(parts[3].trim()), parseStoredDate(parts[4].trim()));
+            break;
+        default:
+            throw new IllegalArgumentException("Unknown task type: " + type);
         }
-        task.isDone = done;
+        task.isDone = isDone;
         return task;
     }
 

@@ -1,4 +1,4 @@
-package Pudding.UI;
+package pudding.ui;
 
 /**
  * Represents a generic task with a description and a completion status.
@@ -19,6 +19,7 @@ public class Task {
     }
 
     /** @return the description of this task */
+    @Override
     public String toString() {
         return description;
     }
